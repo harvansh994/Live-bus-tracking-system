@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Passenger Bus Tracking</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css?v=20260430b" />
+  </head>
+  <body class="map-page modern-map-page track-bus-page dark-theme map-only-mode">
+    <div class="map-app-shell">
+      <div class="map-stage">
+        <div id="map"></div>
+        <div id="mapLoadingOverlay" class="map-loading-overlay visible" aria-live="polite">
+          <div class="loading-spinner"></div>
+          <p>Loading live buses and route data...</p>
+        </div>
+        <div id="mapEmptyState" class="map-empty-state hidden">
+          <div class="glass-card empty-state-card">
+            <p class="tiny-label">No bus data</p>
+            <h2>We could not find live bus information yet.</h2>
+            <p>Check the bus number, refresh the page, or ask the driver to start live tracking.</p>
+          </div>
+        </div>
+        <div class="map-data-cache" hidden aria-hidden="true">
+          <div id="socketState"></div>
+          <div id="lastUpdated"></div>
+          <div id="selectedBusCard"></div>
+          <div id="busSummary"></div>
+          <div id="stopList"></div>
+          <div id="trackingTitle"></div>
+          <div id="trackingSubtitle"></div>
+          <button id="refreshButton" type="button"></button>
+          <div id="remainingDistance"></div>
+          <div id="freshnessBadge"></div>
+          <div id="routeChipBus"></div>
+          <div id="routeChipName"></div>
+          <div id="journeyStart"></div>
+          <div id="journeyEnd"></div>
+          <div id="recentTrackStrip"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./config.js?v=20260430b"></script>
+    <script src="./app.js?v=20260430b"></script>
+  </body>
+</html>

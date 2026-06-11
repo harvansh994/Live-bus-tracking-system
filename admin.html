@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bus Tracking Admin</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3B82F6",
+              dashboard: "#0F172A",
+              surface: "#1E293B",
+              success: "#22C55E",
+              danger: "#EF4444",
+              muted: "#94A3B8",
+              borderglass: "rgba(148, 163, 184, 0.14)",
+            },
+            boxShadow: {
+              panel: "0 18px 40px rgba(15, 23, 42, 0.35)",
+            },
+            borderRadius: {
+              card: "16px",
+              pill: "999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 20%),
+          #0f172a;
+      }
+
+      .glass-panel {
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+        backdrop-filter: blur(18px);
+      }
+
+      .admin-input {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        background: rgba(15, 23, 42, 0.78);
+        color: #f8fafc;
+        padding: 0.95rem 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .admin-input::placeholder {
+        color: #94a3b8;
+      }
+
+      .admin-input:focus {
+        outline: none;
+        border-color: rgba(59, 130, 246, 0.65);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+      }
+
+      .admin-label {
+        display: block;
+        margin-bottom: 0.45rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #94a3b8;
+      }
+
+      .admin-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.9rem 1.2rem;
+        font-weight: 700;
+        color: #fff;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+      }
+
+      .admin-button:hover {
+        transform: translateY(-1px) scale(1.01);
+      }
+
+      .admin-button-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        box-shadow: 0 12px 28px rgba(59, 130, 246, 0.3);
+      }
+
+      .admin-button-success {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow: 0 12px 28px rgba(34, 197, 94, 0.22);
+      }
+
+      .admin-button-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 12px 28px rgba(239, 68, 68, 0.22);
+      }
+
+      .admin-button-neutral {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+      }
+
+      .pin-mode-btn.active,
+      .focus-route-btn,
+      .remove-bus-btn,
+      .delete-stop {
+        transition: all 0.3s ease;
+      }
+
+      .pin-mode-btn.active {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 10px 24px rgba(59, 130, 246, 0.24);
+      }
+
+      .focus-route-btn {
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.14);
+        color: #bfdbfe;
+        padding: 0.65rem 1rem;
+        font-weight: 700;
+      }
+
+      .remove-bus-btn,
+      .delete-stop {
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.14);
+        color: #fecaca;
+        padding: 0.65rem 1rem;
+        font-weight: 700;
+      }
+
+      #adminRouteMap {
+        height: 520px;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .leaflet-control-zoom a {
+        background: rgba(15, 23, 42, 0.94) !important;
+        color: #f8fafc !important;
+        border-bottom-color: rgba(148, 163, 184, 0.18) !important;
+      }
+
+      .admin-dashboard.hidden,
+      .hidden {
+        display: none !important;
+      }
+
+      .sidebar-collapsed .admin-sidebar {
+        width: 108px;
+      }
+
+      .sidebar-collapsed .sidebar-copy,
+      .sidebar-collapsed .sidebar-link-label,
+      .sidebar-collapsed .sidebar-section-title {
+        display: none;
+      }
+
+      .route-steps-empty {
+        color: #94a3b8;
+      }
+
+      .active-bus-card {
+        border-color: rgba(59, 130, 246, 0.45) !important;
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.24);
+      }
+
+      .admin-theme-toggle {
+        min-width: 128px;
+        min-height: 44px;
+        padding-inline: 1rem;
+        font-size: 0.9rem;
+      }
+
+      details[open] summary {
+        margin-bottom: 1.25rem;
+      }
+
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      body.light-admin {
+        background:
+          radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 20%),
+          #f8fafc;
+        color: #0f172a;
+      }
+
+      body.light-admin .glass-panel {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: rgba(148, 163, 184, 0.18);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+      }
+
+      body.light-admin .admin-input {
+        background: rgba(248, 250, 252, 0.96);
+        border-color: rgba(148, 163, 184, 0.22);
+        color: #0f172a;
+      }
+
+      body.light-admin .admin-input::placeholder,
+      body.light-admin .admin-label,
+      body.light-admin .text-slate-400,
+      body.light-admin .text-slate-500 {
+        color: #64748b !important;
+      }
+
+      body.light-admin .text-white,
+      body.light-admin .text-slate-50,
+      body.light-admin .text-slate-300,
+      body.light-admin .text-blue-200,
+      body.light-admin .text-blue-300,
+      body.light-admin .text-success,
+      body.light-admin .text-danger {
+        color: #0f172a !important;
+      }
+
+      body.light-admin .bg-slate-950\/30,
+      body.light-admin .bg-white\/5 {
+        background: rgba(241, 245, 249, 0.9) !important;
+      }
+
+      body.light-admin .border-white\/10,
+      body.light-admin .border-white\/8,
+      body.light-admin .border-white\/5 {
+        border-color: rgba(148, 163, 184, 0.18) !important;
+      }
+
+      body.light-admin .admin-button-neutral,
+      body.light-admin .pin-mode-btn:not(.active),
+      body.light-admin .focus-route-btn,
+      body.light-admin .remove-bus-btn,
+      body.light-admin .delete-stop {
+        background: rgba(241, 245, 249, 0.96);
+        color: #0f172a;
+        border-color: rgba(148, 163, 184, 0.2);
+      }
+
+      body.light-admin .leaflet-control-zoom a {
+        background: rgba(255, 255, 255, 0.96) !important;
+        color: #0f172a !important;
+        border-bottom-color: rgba(148, 163, 184, 0.18) !important;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen text-slate-50 dark-admin">
+    <div class="min-h-screen">
+      <section id="adminLoginView" class="flex min-h-screen items-center justify-center px-4 py-10">
+        <div class="glass-panel w-full max-w-md rounded-card p-8">
+          <div class="mb-6 flex items-center justify-between gap-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-300">Fleet admin access</p>
+            <button id="loginThemeToggle" type="button" data-theme-toggle class="admin-button admin-button-neutral admin-theme-toggle">Light Mode</button>
+          </div>
+          <h1 class="text-4xl font-black tracking-tight text-white">Control your transport network.</h1>
+          <p class="mt-4 text-sm leading-6 text-slate-400">
+            Sign in to add buses, remove buses, set start and end points on the map, and manage live route visibility for passengers.
+          </p>
+          <form id="adminLoginForm" class="mt-8 space-y-4">
+            <div>
+              <label class="admin-label" for="adminUsername">Admin ID</label>
+              <input id="adminUsername" class="admin-input" type="text" placeholder="Enter admin ID" autocomplete="username" required />
+            </div>
+            <div>
+              <label class="admin-label" for="adminPassword">Password</label>
+              <input id="adminPassword" class="admin-input" type="password" placeholder="Enter password" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="admin-button admin-button-primary w-full">Login to dashboard</button>
+          </form>
+          <p id="adminLoginMessage" class="mt-5 text-sm text-slate-400">Use your admin ID and password to continue.</p>
+        </div>
+      </section>
+
+      <div id="adminDashboard" class="admin-dashboard hidden">
+        <div class="flex min-h-screen">
+          <aside class="admin-sidebar glass-panel sticky top-0 h-screen w-[280px] shrink-0 border-r border-white/5 p-5 transition-all duration-300">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 font-black text-white shadow-panel">SG</div>
+                <div class="sidebar-copy">
+                  <p class="text-sm font-semibold uppercase tracking-[0.28em] text-blue-300">Fleet OS</p>
+                  <h2 class="text-lg font-bold text-white">Sagar Go Admin</h2>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="adminThemeToggle" type="button" data-theme-toggle class="admin-button admin-button-neutral admin-theme-toggle">Light Mode</button>
+                <button id="adminSidebarToggle" type="button" class="admin-button admin-button-neutral h-11 w-11 p-0">|||</button>
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <p class="sidebar-section-title mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Navigation</p>
+              <nav class="space-y-2">
+                <a href="#dashboardTop" class="flex items-center gap-3 rounded-2xl bg-blue-500/12 px-4 py-3 text-sm font-semibold text-blue-200 ring-1 ring-blue-400/20">
+                  <span class="text-xs font-black tracking-[0.24em]">DB</span>
+                  <span class="sidebar-link-label">Dashboard</span>
+                </a>
+                <a href="#mapWorkspace" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5">
+                  <span class="text-xs font-black tracking-[0.24em]">MAP</span>
+                  <span class="sidebar-link-label">Route Map</span>
+                </a>
+                <a href="#busDirectory" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5">
+                  <span class="text-xs font-black tracking-[0.24em]">BUS</span>
+                  <span class="sidebar-link-label">Buses</span>
+                </a>
+                <a href="#routeBuilderSection" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5">
+                  <span class="text-xs font-black tracking-[0.24em]">RTE</span>
+                  <span class="sidebar-link-label">Route Builder</span>
+                </a>
+              </nav>
+            </div>
+
+            <div class="mt-8 rounded-card border border-white/10 bg-slate-950/30 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Quick steps</p>
+              <ol class="mt-4 space-y-3 text-sm text-slate-300">
+                <li><span class="font-semibold text-white">1.</span> Add or select a bus.</li>
+                <li><span class="font-semibold text-white">2.</span> Pick start and end on the map.</li>
+                <li><span class="font-semibold text-white">3.</span> Save route and review the map.</li>
+              </ol>
+            </div>
+
+            <div class="mt-8 rounded-card border border-white/10 bg-slate-950/30 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Platform status</p>
+              <div class="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <div id="adminState" class="text-2xl font-black text-white">Offline</div>
+                  <p id="adminMessage" class="mt-1 text-sm text-slate-400">Waiting for backend...</p>
+                </div>
+                <span class="inline-flex h-3 w-3 rounded-full bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.65)]"></span>
+              </div>
+            </div>
+
+            <div class="mt-auto pt-8">
+              <button id="adminLogout" type="button" class="admin-button admin-button-danger w-full">Logout</button>
+            </div>
+          </aside>
+
+          <main class="min-w-0 flex-1 p-4 md:p-6 xl:p-8">
+            <div id="dashboardTop" class="mx-auto max-w-[1600px] space-y-6">
+              <header class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <section class="glass-panel rounded-card p-6">
+                  <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-300">Operations dashboard</p>
+                  <h1 class="mt-3 text-4xl font-black tracking-tight text-white md:text-5xl">Modern fleet control for live bus tracking.</h1>
+                  <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
+                    Add buses, assign drivers, build routes directly on the map, and monitor the entire network from a production-ready control panel.
+                  </p>
+                </section>
+                <section class="glass-panel rounded-card p-6">
+                  <p class="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">Control center</p>
+                  <div class="mt-4 space-y-4">
+                    <div class="flex items-center justify-between rounded-2xl bg-slate-950/30 px-4 py-3">
+                      <span class="text-sm text-slate-400">API state</span>
+                      <span class="rounded-pill bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-300">Connected</span>
+                    </div>
+                    <div class="flex items-center justify-between rounded-2xl bg-slate-950/30 px-4 py-3">
+                      <span class="text-sm text-slate-400">Routes loaded</span>
+                      <span id="adminRouteCount" class="text-lg font-bold text-white">0</span>
+                    </div>
+                    <div class="flex items-center justify-between rounded-2xl bg-slate-950/30 px-4 py-3">
+                      <span class="text-sm text-slate-400">Live alerts</span>
+                      <span id="adminAlertCount" class="text-lg font-bold text-white">0</span>
+                    </div>
+                  </div>
+                </section>
+              </header>
+
+              <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article class="glass-panel rounded-card p-5">
+                  <p class="text-sm font-medium text-slate-400">Total buses</p>
+                  <h2 id="totalBusesMetric" class="mt-3 text-3xl font-black text-white">0</h2>
+                  <p class="mt-2 text-sm text-slate-500">Buses configured in the system</p>
+                </article>
+                <article class="glass-panel rounded-card p-5">
+                  <p class="text-sm font-medium text-slate-400">Active routes</p>
+                  <h2 id="activeRoutesMetric" class="mt-3 text-3xl font-black text-white">0</h2>
+                  <p class="mt-2 text-sm text-slate-500">Routes with saved stop points</p>
+                </article>
+                <article class="glass-panel rounded-card p-5">
+                  <p class="text-sm font-medium text-slate-400">Online drivers</p>
+                  <h2 id="onlineDriversMetric" class="mt-3 text-3xl font-black text-success">0</h2>
+                  <p class="mt-2 text-sm text-slate-500">Drivers currently sending live GPS</p>
+                </article>
+                <article class="glass-panel rounded-card p-5">
+                  <p class="text-sm font-medium text-slate-400">Alerts</p>
+                  <h2 id="alertsMetric" class="mt-3 text-3xl font-black text-danger">0</h2>
+                  <p class="mt-2 text-sm text-slate-500">Offline or incomplete route issues</p>
+                </article>
+              </section>
+
+              <section class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+                <div class="space-y-6">
+                <section class="glass-panel rounded-card p-5">
+                  <div class="mb-5 flex items-center justify-between">
+                    <div>
+                      <h2 class="text-xl font-bold text-white">Add Bus</h2>
+                      <p class="mt-1 text-sm text-slate-400">Create a bus before building its route.</p>
+                    </div>
+                    <span class="rounded-pill bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-200">New</span>
+                  </div>
+                    <form id="busForm" class="space-y-4">
+                      <div>
+                        <label class="admin-label" for="busCode">Bus code</label>
+                        <input id="busCode" class="admin-input" type="text" placeholder="e.g. DEMO-101" required />
+                      </div>
+                      <div>
+                        <label class="admin-label" for="routeName">Route name</label>
+                        <input id="routeName" class="admin-input" type="text" placeholder="e.g. Sagar City Loop" required />
+                      </div>
+                      <div>
+                        <label class="admin-label" for="driverPin">Driver PIN</label>
+                        <input id="driverPin" class="admin-input" type="text" placeholder="Set secure driver PIN" required />
+                      </div>
+                      <button type="submit" class="admin-button admin-button-primary w-full">Add Bus</button>
+                    </form>
+                  </section>
+
+                  <section id="routeBuilderSection" class="glass-panel rounded-card p-5">
+                    <div class="mb-5 flex items-start justify-between gap-3">
+                      <div>
+                        <h2 class="text-xl font-bold text-white">Quick Route Builder</h2>
+                        <p class="mt-1 text-sm text-slate-400">Choose a bus, pick start and end points, then save.</p>
+                      </div>
+                      <span class="rounded-pill bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">Live workflow</span>
+                    </div>
+                    <form id="quickRouteForm" class="space-y-4">
+                      <div class="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3">
+                        <span class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Selected bus</span>
+                        <strong id="quickRouteSelectedBus" class="mt-2 block text-base text-white">No bus selected</strong>
+                      </div>
+                      <div>
+                        <label class="admin-label" for="quickRouteName">Route display name</label>
+                        <input id="quickRouteName" class="admin-input" type="text" placeholder="Public route display name" required />
+                      </div>
+                      <div>
+                        <label class="admin-label" for="quickStartName">Start point name</label>
+                        <input id="quickStartName" class="admin-input" type="text" placeholder="Route start name" required />
+                      </div>
+                      <div>
+                        <label class="admin-label" for="quickEndName">End point name</label>
+                        <input id="quickEndName" class="admin-input" type="text" placeholder="Route end name" required />
+                      </div>
+
+                      <div class="grid gap-3 md:grid-cols-2">
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Start point</p>
+                          <strong id="quickStartCoords" class="mt-3 block text-sm text-white">Pick on map</strong>
+                          <button id="pickQuickStartButton" type="button" class="pin-mode-btn mt-4 w-full rounded-pill border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200">Choose Start</button>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">End point</p>
+                          <strong id="quickEndCoords" class="mt-3 block text-sm text-white">Pick on map</strong>
+                          <button id="pickQuickEndButton" type="button" class="pin-mode-btn mt-4 w-full rounded-pill border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200">Choose End</button>
+                        </div>
+                      </div>
+
+                      <button type="submit" class="admin-button admin-button-success w-full">Save Route</button>
+                    </form>
+                    <p id="quickRouteHint" class="mt-4 text-sm text-slate-400">Pick start and end on the map, name them, and save the route.</p>
+                  </section>
+
+                  <details class="glass-panel rounded-card p-5">
+                    <summary class="flex cursor-pointer list-none items-start justify-between gap-3">
+                      <div>
+                        <h2 class="text-xl font-bold text-white">Optional Extra Stops</h2>
+                        <p class="mt-1 text-sm text-slate-400">Only use this if the route needs more detail.</p>
+                      </div>
+                      <span class="rounded-pill bg-slate-800/90 px-3 py-1 text-xs font-semibold text-slate-300">Optional</span>
+                    </summary>
+                    <div class="grid gap-2 md:grid-cols-3">
+                      <button id="setStartPinButton" type="button" class="pin-mode-btn rounded-pill border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 active">Set Start</button>
+                      <button id="setStopPinButton" type="button" class="pin-mode-btn rounded-pill border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200">Set Stop</button>
+                      <button id="setEndPinButton" type="button" class="pin-mode-btn rounded-pill border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200">Set End</button>
+                    </div>
+                    <form id="stopForm" class="mt-4 space-y-4">
+                      <div>
+                        <label class="admin-label" for="stopBusId">Bus</label>
+                        <select id="stopBusId" class="admin-input" required></select>
+                      </div>
+                      <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label class="admin-label" for="stopCode">Stop code</label>
+                          <input id="stopCode" class="admin-input" type="text" placeholder="STOP-3" required />
+                        </div>
+                        <div>
+                          <label class="admin-label" for="stopName">Stop name</label>
+                          <input id="stopName" class="admin-input" type="text" placeholder="Main Road Stop" required />
+                        </div>
+                      </div>
+                      <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label class="admin-label" for="stopLatitude">Latitude</label>
+                          <input id="stopLatitude" class="admin-input" type="number" step="any" placeholder="23.8388" required />
+                        </div>
+                        <div>
+                          <label class="admin-label" for="stopLongitude">Longitude</label>
+                          <input id="stopLongitude" class="admin-input" type="number" step="any" placeholder="78.7387" required />
+                        </div>
+                      </div>
+                      <div>
+                        <label class="admin-label" for="stopOrder">Stop order</label>
+                        <input id="stopOrder" class="admin-input" type="number" placeholder="3" required />
+                      </div>
+                      <button type="submit" class="admin-button admin-button-neutral w-full">Save Extra Stop</button>
+                    </form>
+                    <p id="adminMapHint" class="mt-4 text-sm text-slate-400">Use this section only if you want extra stops between the start and end points.</p>
+                  </details>
+                </div>
+
+                <div class="space-y-6">
+                  <section id="mapWorkspace" class="glass-panel rounded-card p-5">
+                    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 class="text-xl font-bold text-white">Route Builder Map</h2>
+                        <p class="mt-1 text-sm text-slate-400">Click directly on the map to place route points and preview the saved path.</p>
+                      </div>
+                      <div class="flex flex-wrap gap-3">
+                        <button id="reloadAdmin" type="button" class="admin-button admin-button-neutral">Reload</button>
+                        <button id="rebuildDirections" type="button" class="admin-button admin-button-primary">Refresh Directions</button>
+                      </div>
+                    </div>
+                    <div id="adminRouteMap"></div>
+                  </section>
+
+                  <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+                    <div id="busDirectory" class="glass-panel rounded-card p-5">
+                      <div class="mb-5 flex items-center justify-between gap-3">
+                        <div>
+                          <h2 class="text-xl font-bold text-white">Bus Directory</h2>
+                          <p class="mt-1 text-sm text-slate-400">Search, focus, and manage buses from one list.</p>
+                        </div>
+                        <span class="rounded-pill bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-200">Live table</span>
+                      </div>
+                      <div class="mb-4">
+                        <input id="adminBusSearch" class="admin-input" type="search" placeholder="Search bus code or route name" />
+                      </div>
+                      <div id="adminBusList" class="space-y-4"></div>
+                    </div>
+
+                    <div class="glass-panel rounded-card p-5">
+                      <div class="mb-5 flex items-center justify-between gap-3">
+                        <div>
+                          <h2 class="text-xl font-bold text-white">Directions Preview</h2>
+                          <p class="mt-1 text-sm text-slate-400">Driving distance, timing, and saved route stops.</p>
+                        </div>
+                      </div>
+                      <div class="grid gap-3 sm:grid-cols-3">
+                        <article class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                          <span class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Distance</span>
+                          <strong id="routeDistanceValue" class="mt-3 block text-xl text-white">--</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                          <span class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Drive time</span>
+                          <strong id="routeDurationValue" class="mt-3 block text-xl text-white">--</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                          <span class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Stops used</span>
+                          <strong id="routeStopCountValue" class="mt-3 block text-xl text-white">0</strong>
+                        </article>
+                      </div>
+
+                      <div class="mt-6">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Saved stop names</h3>
+                        <div id="routeStopNamesList" class="mt-3 space-y-3">
+                          <p class="route-steps-empty">Saved route stops will appear here after you add pins.</p>
+                        </div>
+                      </div>
+
+                      <div class="mt-6">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Turn-by-turn steps</h3>
+                        <div id="routeStepsList" class="mt-3 space-y-3">
+                          <p class="route-steps-empty">Save at least two route pins to build a directions-style road preview.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./config.js?v=20260430b"></script>
+    <script src="./admin.js?v=20260430b"></script>
+  </body>
+</html>

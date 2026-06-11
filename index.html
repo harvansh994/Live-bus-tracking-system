@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sagar Go | Live Bus Tracking</title>
+    <link rel="stylesheet" href="./styles.css?v=20260430b" />
+  </head>
+  <body class="landing-page premium-home-page dark-theme">
+    <div class="shell premium-home-shell modern-home-shell">
+      <nav class="topbar premium-home-topbar minimal-nav-bar">
+        <div class="brand-lockup">
+          <span class="brand-badge">SG</span>
+          <div>
+            <a class="topbar-brand" href="./index.html">Sagar Go</a>
+            <p class="chalo-brand-sub">Live Bus Tracking System</p>
+          </div>
+        </div>
+        <div class="topbar-links premium-home-links">
+          <a href="./passenger-map.html?busId=DEMO-101">Live Tracking</a>
+          <a href="./admin.html">Admin Panel</a>
+          <button id="homeThemeToggle" type="button" class="topbar-theme-toggle" aria-label="Toggle dark or light mode">
+            <span class="theme-toggle-dot"></span>
+            <span class="theme-toggle-text">Light Mode</span>
+          </button>
+        </div>
+      </nav>
+
+      <section class="hero-map-shell">
+        <div class="hero-map-backdrop">
+          <div class="hero-map-orb hero-map-orb-a"></div>
+          <div class="hero-map-orb hero-map-orb-b"></div>
+          <div class="hero-map-grid"></div>
+          <div class="hero-route-preview"></div>
+          <span class="hero-map-stop hero-map-stop-start"></span>
+          <span class="hero-map-stop hero-map-stop-mid"></span>
+          <span class="hero-map-stop hero-map-stop-end"></span>
+          <span class="hero-map-bus">BUS</span>
+        </div>
+
+        <div class="hero-layout-grid">
+          <section class="glass-card hero-search-card">
+            <p class="eyebrow">Real-time passenger experience</p>
+            <h1>Premium live bus tracking for web and mobile.</h1>
+            <p class="hero-text landing-text">
+              Search a bus, open the live route map, follow the vehicle in real time, and jump into admin controls from one connected system.
+            </p>
+
+            <div class="hero-search-stack">
+              <label class="chalo-search-label" for="homeBusSearch">Search bus number / route</label>
+              <div class="hero-search-row">
+                <input id="homeBusSearch" class="text-input chalo-search-input" type="text" placeholder="Search bus number / route" />
+                <a class="hero-search-action" href="./passenger-map.html?busId=DEMO-101">Track Demo</a>
+              </div>
+              <p class="track-home-search-hint">Press Enter after typing the bus number to open the live tracking map instantly.</p>
+            </div>
+
+            <div class="premium-home-stats hero-stat-grid">
+              <article class="premium-stat-card">
+                <strong id="homeLiveBusCount">0</strong>
+                <span>Active buses</span>
+              </article>
+              <article class="premium-stat-card">
+                <strong id="homeStopCount">0</strong>
+                <span>Nearby stops</span>
+              </article>
+              <article class="premium-stat-card">
+                <strong id="homeFavoriteCount">0</strong>
+                <span>Saved buses</span>
+              </article>
+            </div>
+          </section>
+
+          <aside class="glass-card hero-side-panel">
+            <div class="hero-panel-top">
+              <span class="signal-chip live">Live</span>
+              <strong>DEMO-101</strong>
+            </div>
+            <div class="hero-route-copy">
+              <h2>Sagar City Loop</h2>
+              <p>Real-time route map, nearby stops, route alerts, and admin controls in one interface.</p>
+            </div>
+            <div class="hero-side-metrics">
+              <article>
+                <span>Passenger map</span>
+                <strong>Full-screen live tracking</strong>
+              </article>
+              <article>
+                <span>Driver app</span>
+                <strong>Background GPS updates</strong>
+              </article>
+              <article>
+                <span>Admin tools</span>
+                <strong>Map-based route setup</strong>
+              </article>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel premium-home-section home-section-block">
+        <div class="panel-heading">
+          <div>
+            <h2>Live Buses</h2>
+            <p id="homeBusStatus" class="home-panel-subtitle">Loading bus list...</p>
+          </div>
+        </div>
+        <div id="homeBusList" class="home-bus-grid modern-bus-grid"></div>
+      </section>
+
+      <section class="panel premium-home-section home-section-block nearby-stops-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Nearby Stops</h2>
+            <p id="nearbyStopsStatus" class="home-panel-subtitle">Stops around Sagar city routes</p>
+          </div>
+        </div>
+        <div id="nearbyStopsList" class="nearby-stops-grid modern-stop-card-grid"></div>
+      </section>
+
+      <section class="passenger-insight-grid premium-home-insights">
+        <article class="panel passenger-insight-panel glass-card">
+          <div class="panel-heading">
+            <div>
+              <h2>Favorite Buses</h2>
+              <p class="home-panel-subtitle">Quick access to your frequent buses</p>
+            </div>
+          </div>
+          <div id="favoriteBusList" class="mini-card-grid"></div>
+        </article>
+
+        <article class="panel passenger-insight-panel glass-card">
+          <div class="panel-heading">
+            <div>
+              <h2>Recent Searches</h2>
+              <p class="home-panel-subtitle">Continue tracking from your latest searches</p>
+            </div>
+          </div>
+          <div id="recentSearchList" class="mini-card-grid"></div>
+        </article>
+      </section>
+    </div>
+
+    <script src="./config.js?v=20260430b"></script>
+    <script src="./app.js?v=20260430b"></script>
+  </body>
+</html>
